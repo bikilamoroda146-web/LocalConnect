@@ -3,35 +3,12 @@ import { Search, CalendarCheck, Star, ArrowRight, ShieldCheck, FileText, Eye, Br
 import SearchBar from '../../components/forms/SearchBar'
 import Button from '../../components/common/Button'
 import ProviderCard from '../../components/providers/ProviderCard'
-import ProfileAvatar from '../../components/common/ProfileAvatar'
-import Rating from '../../components/common/Rating'
 import { Badge } from '../../components/common/Badges'
 import { categories } from '../../data/categories'
 import { testimonials } from '../../data/reviews'
 import { useApp } from '../../app/AppContext'
-
-function HeroPanel({ providers }) {
-  const p = providers[0]
-  return (
-    <div className="relative mx-auto w-full max-w-md" aria-label="Example of a booking request (illustrative)" role="group">
-      <div className="card p-5 shadow-lift">
-        <div className="flex items-center gap-3">
-          <ProfileAvatar userId={p.userId} name={p.name} hue={p.hue} size={56} />
-          <div className="flex-1"><p className="font-semibold">{p.name}</p><p className="text-sm text-ink-soft">{p.profession} · {p.area}</p></div>
-          <Rating value={p.rating} count={p.reviews} />
-        </div>
-        <div className="mt-4 rounded-md bg-slate-50 p-3 text-sm">
-          <p className="font-medium">Leak Detection &amp; Repair</p>
-          <p className="text-ink-soft">Estimate from ETB 600 per visit</p>
-        </div>
-        <ul className="mt-4 space-y-2 text-sm">
-          {['Pick a day that suits you', 'Provider accepts or declines', 'Track the status in My bookings'].map((t) => <li key={t} className="flex items-center gap-2"><CheckCircle2 size={16} className="text-brand" aria-hidden="true" />{t}</li>)}
-        </ul>
-        <p className="mt-4 text-xs text-ink-muted">Illustrative preview using demo data.</p>
-      </div>
-    </div>
-  )
-}
+import useHomepageAppearance from '../../hooks/useHomepageAppearance'
+import HomepageHeroBackground from '../../components/public/HomepageHeroBackground'
 
 const steps = [
   { icon: Search, title: 'Discover a service', text: 'Search by service or location, then filter by price and rating.' },
@@ -45,26 +22,24 @@ const trust = [
 ]
 
 export default function Home() {
-  const { providers, services } = useApp()
+  const { providers } = useApp()
+  const { imageUrl, appearance } = useHomepageAppearance()
   const featured = [...providers].filter((p) => p.reviews > 0).sort((a, b) => b.rating - a.rating).slice(0, 4)
-  const published = services.filter((s) => s.published).length
-  const avg = (providers.reduce((t, p) => t + p.rating, 0) / providers.length).toFixed(1)
   return (
     <>
-      <section className="border-b border-line">
-        <div className="container-page grid items-center gap-10 py-12 sm:py-16 lg:grid-cols-[1.15fr_1fr] lg:py-20">
-          <div>
-            <p className="text-sm font-semibold text-brand-800">Trusted local professionals</p>
-            <h1 className="mt-3 text-balance text-4xl font-bold leading-[1.1] sm:text-5xl">Find the Right Professional for Every Job</h1>
-            <p className="mt-4 max-w-xl text-lg text-ink-soft">Compare local plumbers, electricians, cleaners, tutors and more. See prices up front, request a time that suits you, and follow your booking from request to review.</p>
-            <div className="mt-8 max-w-2xl"><SearchBar /></div>
+      <section className="relative isolate overflow-hidden border-b border-line">
+        <HomepageHeroBackground imageUrl={imageUrl} position={appearance.position} />
+        <div className="container-page relative z-10 py-14 sm:py-20 lg:py-24">
+          <div className="max-w-5xl">
+            <p className="text-sm font-semibold text-emerald-200">Trusted local professionals</p>
+            <h1 className="mt-3 text-balance text-4xl font-bold leading-[1.1] text-white sm:text-5xl">Find the Right Professional for Every Job</h1>
+            <p className="mt-4 max-w-3xl text-lg text-white/85">Compare local plumbers, electricians, cleaners, tutors and more. See prices up front, request a time that suits you, and follow your booking from request to review.</p>
+            <div className="mt-8 max-w-4xl"><SearchBar /></div>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <Button to="/services" size="lg">Explore Services</Button>
               <Button to="/register?role=provider" variant="secondary" size="lg">Become a Provider</Button>
             </div>
-            <p className="mt-6 text-sm text-ink-muted">Demo data: {providers.length} providers · {published} published services · {avg} average rating</p>
           </div>
-          <HeroPanel providers={providers} />
         </div>
       </section>
 

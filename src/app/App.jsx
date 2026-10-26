@@ -26,6 +26,7 @@ import AdminUsers from '../pages/admin/Users'
 import AdminServices from '../pages/admin/Services'
 import AdminBookings from '../pages/admin/Bookings'
 import AdminReports from '../pages/admin/Reports'
+import AdminAppearance from '../pages/admin/Appearance'
 
 const area = (role, routes) => (
   <Route path={`/${role}`} element={<RoleGuard role={role}><DashboardLayout role={role} /></RoleGuard>}>
@@ -50,7 +51,7 @@ export default function App() {
         </Route>
         {area('customer', [['dashboard', CustomerDashboard], ['bookings', CustomerBookings], ['favorites', Favorites], ['profile', CustomerProfile]])}
         {area('provider', [['dashboard', ProviderDashboard], ['services', ProviderServices], ['bookings', ProviderBookings], ['availability', Availability], ['portfolio', ProviderPortfolio], ['profile', ProviderProfileEdit]])}
-        {area('admin', [['dashboard', AdminDashboard], ['users', AdminUsers], ['services', AdminServices], ['bookings', AdminBookings], ['reports', AdminReports]])}
+        {area('admin', [['dashboard', AdminDashboard], ['users', AdminUsers], ['services', AdminServices], ['bookings', AdminBookings], ['reports', AdminReports], ['appearance', AdminAppearance]])}
       </Routes>
       <Toaster />
     </>

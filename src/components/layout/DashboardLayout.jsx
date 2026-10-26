@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, CalendarCheck, Heart, UserRound, Briefcase, Clock, Users, ListChecks, BarChart3, Menu, X, LogOut, Globe, Images } from 'lucide-react'
+import { LayoutDashboard, CalendarCheck, Heart, UserRound, Briefcase, Clock, Users, ListChecks, BarChart3, Menu, X, LogOut, Globe, Images, Image as ImageIcon } from 'lucide-react'
 import Logo from './Logo'
 import ProfileAvatar from '../common/ProfileAvatar'
 import { useApp } from '../../app/AppContext'
@@ -9,7 +9,7 @@ import { profilePath } from '../../data/users'
 const NAV = {
   customer: [['dashboard', 'Dashboard', LayoutDashboard], ['bookings', 'My bookings', CalendarCheck], ['favorites', 'Favorites', Heart], ['profile', 'Profile', UserRound]],
   provider: [['dashboard', 'Dashboard', LayoutDashboard], ['services', 'My services', Briefcase], ['bookings', 'Booking requests', CalendarCheck], ['availability', 'Availability', Clock], ['portfolio', 'My Portfolio', Images], ['profile', 'Profile', UserRound]],
-  admin: [['dashboard', 'Dashboard', LayoutDashboard], ['users', 'Users', Users], ['services', 'Services', ListChecks], ['bookings', 'Bookings', CalendarCheck], ['reports', 'Reports', BarChart3]],
+  admin: [['dashboard', 'Dashboard', LayoutDashboard], ['users', 'Users', Users], ['services', 'Services', ListChecks], ['bookings', 'Bookings', CalendarCheck], ['reports', 'Reports', BarChart3], ['appearance', 'Homepage appearance', ImageIcon]],
 }
 export default function DashboardLayout({ role }) {
   const [open, setOpen] = useState(false)
