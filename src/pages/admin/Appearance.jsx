@@ -5,9 +5,7 @@ import PageHeader from '../../components/common/PageHeader'
 import HomepageHeroBackground from '../../components/public/HomepageHeroBackground'
 import useHomepageAppearance from '../../hooks/useHomepageAppearance'
 import { saveHomepageAppearance } from '../../utils/homepageAppearance'
-
-const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
+import { isSupportedImageType, MAX_IMAGE_SIZE_BYTES } from '../../utils/media'
 
 function readableStorageError(error) {
   if (error?.name === 'QuotaExceededError') {
@@ -29,6 +27,7 @@ export default function AdminAppearance() {
   const [success, setSuccess] = useState('')
   const inputRef = useRef(null)
   const previewUrlRef = useRef(null)
+  const submitLock = useRef(false)
 
   useEffect(() => {
     if (!loading) setPosition(appearance.position)
@@ -48,11 +47,11 @@ export default function AdminAppearance() {
     if (!selected) return
     setError('')
     setSuccess('')
-    if (!ACCEPTED_TYPES.includes(selected.type)) {
+    if (!isSupportedImageType(selected)) {
       setError('Choose a JPEG, PNG, or WebP image.')
       return
     }
-    if (selected.size > MAX_FILE_SIZE_BYTES) {
+    if (selected.size > MAX_IMAGE_SIZE_BYTES) {
       setError('This image is larger than 5 MB. Choose a smaller file.')
       return
     }
@@ -89,17 +88,19 @@ export default function AdminAppearance() {
   }
 
   const publishChanges = async () => {
+    if (submitLock.current) return
     setError('')
     setSuccess('')
     if (validating) {
       setError('Wait for the image preview to finish loading before publishing.')
       return
     }
-    if (file && file.size > MAX_FILE_SIZE_BYTES) {
+    if (file && file.size > MAX_IMAGE_SIZE_BYTES) {
       setError('This image is larger than 5 MB. Choose a smaller file.')
       return
     }
 
+    submitLock.current = true
     setSaving(true)
     let nextAppearance
     try {
@@ -113,6 +114,7 @@ export default function AdminAppearance() {
       setValidating(false)
     } catch (saveError) {
       setError(readableStorageError(saveError))
+      submitLock.current = false
       setSaving(false)
       return
     }
@@ -122,6 +124,7 @@ export default function AdminAppearance() {
     } catch {
       setSuccess('Changes were saved in this browser, but the preview could not be refreshed. Reload this page to see the saved settings.')
     } finally {
+      submitLock.current = false
       setSaving(false)
     }
   }

@@ -1,11 +1,11 @@
 import { BadgeCheck } from 'lucide-react'
 import { STATUS } from '../../utils/bookings'
 const tones = {
-  green: 'bg-emerald-50 text-emerald-800 ring-emerald-200', amber: 'bg-amber-50 text-amber-900 ring-amber-200',
-  blue: 'bg-sky-50 text-sky-900 ring-sky-200', slate: 'bg-slate-100 text-slate-700 ring-slate-200', red: 'bg-red-50 text-red-800 ring-red-200',
+  green: 'bg-success-50 text-success-800 ring-success-100', amber: 'bg-warning-50 text-warning-900 ring-warning-100',
+  blue: 'bg-info-50 text-info-900 ring-info-100', slate: 'bg-slate-100 text-slate-700 ring-slate-200', red: 'bg-error-50 text-error-800 ring-error-100',
 }
 export const Badge = ({ tone = 'slate', children }) => (
-  <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${tones[tone]}`}>{children}</span>
+  <span className={`inline-flex items-center rounded-pill px-2.5 py-1 text-xs font-semibold leading-none ring-1 ring-inset ${tones[tone] ?? tones.slate}`}>{children}</span>
 )
 export const StatusBadge = ({ status }) => <Badge tone={STATUS[status]?.tone}>{STATUS[status]?.label ?? status}</Badge>
 export const VerificationBadge = ({ verified }) =>

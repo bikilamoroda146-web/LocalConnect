@@ -1,3 +1,5 @@
+import { ACCEPTED_IMAGE_TYPES, MAX_IMAGE_SIZE_BYTES } from './media'
+
 const DB_NAME = 'localconnect-homepage-appearance'
 const STORE_NAME = 'appearance'
 const RECORD_KEY = 'hero'
@@ -8,7 +10,6 @@ export const DEFAULT_HOMEPAGE_APPEARANCE = {
 }
 
 const POSITIONS = ['center', 'top', 'bottom']
-const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
 
 function openDatabase() {
   return new Promise((resolve, reject) => {
@@ -35,7 +36,7 @@ function openDatabase() {
 function validateAppearance({ image, position }) {
   if (!POSITIONS.includes(position)) throw new Error('Choose a valid homepage image position.')
   if (image !== null && !(image instanceof Blob)) throw new Error('The selected homepage image is invalid.')
-  if (image && !['image/jpeg', 'image/png', 'image/webp'].includes(image.type)) {
+  if (image && !ACCEPTED_IMAGE_TYPES.includes(image.type)) {
     throw new Error('Choose a JPEG, PNG, or WebP image.')
   }
   if (image && image.size > MAX_IMAGE_SIZE_BYTES) throw new Error('Homepage images must be 5 MB or smaller.')

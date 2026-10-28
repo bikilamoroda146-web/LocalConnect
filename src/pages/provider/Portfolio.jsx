@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Eye, Images, Plus, Trash2 } from 'lucide-react'
 import PageHeader from '../../components/common/PageHeader'
 import Button from '../../components/common/Button'
-import Modal from '../../components/common/Modal'
+import Modal, { ConfirmDialog } from '../../components/common/Modal'
 import ProfileAvatar from '../../components/common/ProfileAvatar'
 import { EmptyState } from '../../components/common/States'
 import PortfolioCoverEditor from '../../components/providers/PortfolioCoverEditor'
@@ -28,6 +28,8 @@ export default function ProviderPortfolio() {
   const [editingProject, setEditingProject] = useState(undefined)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const submitLock = useRef(false)
+  const [confirmAction, setConfirmAction] = useState(null)
   const [error, setError] = useState('')
   const [stagedMedia, setStagedMedia] = useState([])
   const [pendingRemoval, setPendingRemoval] = useState([])
@@ -74,13 +76,14 @@ export default function ProviderPortfolio() {
   }
 
   const deleteProject = (project) => {
-    if (!window.confirm(`Delete “${project.title}” and its photos? The deletion takes effect when you save your portfolio.`)) return
     setDraft((current) => ({ ...current, projects: current.projects.filter((item) => item.id !== project.id) }))
     setPendingRemoval((current) => [...new Set([...current, ...project.photoIds])])
   }
 
   const saveChanges = async (event) => {
     event.preventDefault()
+    if (submitLock.current) return
+    submitLock.current = true
     setSaving(true)
     setError('')
     let newCoverId = null
@@ -118,13 +121,13 @@ export default function ProviderPortfolio() {
       }
       setError(saveError.message || 'Could not save your portfolio. Please try again.')
     } finally {
+      submitLock.current = false
       setSaving(false)
     }
   }
 
   const cancelChanges = async () => {
     if (!dirty) return
-    if (!window.confirm('Discard your unsaved portfolio changes?')) return
     const results = await Promise.allSettled(stagedMedia.map((id) => removePortfolioMedia(id)))
     if (results.some((result) => result.status === 'rejected')) {
       toast('Changes were discarded, but some temporary photos could not be cleared.', 'error')
@@ -172,7 +175,7 @@ export default function ProviderPortfolio() {
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div><p className="text-xs font-semibold uppercase tracking-wide text-brand-800">{categoryById(project.category)?.name ?? 'Project'}</p><h3 className="mt-1 font-semibold">{project.title}</h3></div>
-                    <button type="button" onClick={() => deleteProject(project)} aria-label={`Delete ${project.title}`} className="rounded p-2 text-ink-muted hover:bg-red-50 hover:text-red-700"><Trash2 size={17} /></button>
+                    <button type="button" onClick={() => setConfirmAction({ type: 'delete', project })} aria-label={`Delete ${project.title}`} className="rounded p-2 text-ink-muted hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"><Trash2 size={17} aria-hidden="true" /></button>
                   </div>
                   <p className="mt-2 line-clamp-3 text-sm text-ink-soft">{project.description}</p>
                   {(project.completedAt || project.location) && <p className="mt-3 text-xs text-ink-muted">{[project.location, project.completedAt ? formatDate(project.completedAt) : ''].filter(Boolean).join(' · ')}</p>}
@@ -184,14 +187,29 @@ export default function ProviderPortfolio() {
         <p className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">Portfolio details are saved only in this browser. Photos use browser-local storage and are not uploaded or shared with other devices.</p>
         {error && <p role="alert" className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>}
         <div className="flex flex-wrap gap-3">
-          <Button type="submit" loading={saving} disabled={saving}>Save portfolio</Button>
-          <Button type="button" variant="secondary" onClick={cancelChanges} disabled={saving || !dirty}>Cancel changes</Button>
+          <Button type="submit" loading={saving} disabled={saving || !dirty}>Save portfolio</Button>
+          <Button type="button" variant="secondary" onClick={() => setConfirmAction({ type: 'discard' })} disabled={saving || !dirty}>Cancel changes</Button>
           <span className="self-center text-sm text-ink-muted">{draft.published ? 'Currently published' : 'Draft — not shown to customers'}</span>
         </div>
       </form>
 
       {editingProject !== undefined && <PortfolioProjectEditor key={editingProject?.id ?? 'new-project'} ownerId={provider.id} project={editingProject} defaultCategory={provider.category} onSave={saveProject} onClose={() => setEditingProject(undefined)} />}
       {previewOpen && <PortfolioPreview provider={provider} portfolio={draft} coverSelection={coverSelection} coverPreviewUrl={coverPreviewUrl} onClose={() => setPreviewOpen(false)} />}
+      <ConfirmDialog
+        open={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={() => {
+          if (confirmAction?.type === 'delete') deleteProject(confirmAction.project)
+          if (confirmAction?.type === 'discard') cancelChanges()
+          setConfirmAction(null)
+        }}
+        title={confirmAction?.type === 'delete' ? 'Delete this project?' : 'Discard portfolio changes?'}
+        message={confirmAction?.type === 'delete'
+          ? `Remove “${confirmAction.project?.title}” and its photos from the draft? The deletion takes effect when you save your portfolio.`
+          : 'Discard your unsaved portfolio edits and temporary photos? This cannot be undone.'}
+        confirmLabel={confirmAction?.type === 'delete' ? 'Delete project' : 'Discard changes'}
+        danger
+      />
     </>
   )
 }

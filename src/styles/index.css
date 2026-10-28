@@ -4,14 +4,16 @@
 
 @layer base {
   html { scroll-behavior: smooth; }
-  body { @apply bg-canvas text-ink font-sans antialiased; }
+  body { @apply bg-canvas text-ink font-sans text-base leading-relaxed antialiased; }
   h1, h2, h3 { @apply tracking-tight; }
-  :focus-visible { @apply outline-2 outline-offset-2 outline-brand outline; }
+  button { @apply transition-colors duration-150 ease-out; }
+  :focus-visible { @apply outline-none ring-2 ring-brand ring-offset-2; }
+  ::selection { @apply bg-brand-100 text-brand-900; }
 }
 @layer components {
-  .container-page { @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8; }
-  .card { @apply rounded-lg border border-line bg-white shadow-card; }
-  .input { @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-base text-ink placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:bg-slate-50; }
+  .container-page { @apply mx-auto w-full max-w-page px-4 sm:px-6 lg:px-8; }
+  .card { @apply rounded-card border border-line bg-surface shadow-card; }
+  .input { @apply min-h-11 w-full rounded-control border border-slate-300 bg-surface px-3 py-2.5 text-base leading-normal text-ink placeholder:text-ink-muted transition-colors duration-150 hover:border-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-ink-muted; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }

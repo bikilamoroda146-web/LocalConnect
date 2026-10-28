@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { Camera, ImageOff, Trash2 } from 'lucide-react'
 import Button from '../common/Button'
+import { ConfirmDialog } from '../common/Modal'
 import PortfolioImage from './PortfolioImage'
-
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const MAX_FILE_SIZE = 5 * 1024 * 1024
+import { isSupportedImageType, MAX_IMAGE_SIZE_BYTES } from '../../utils/media'
 
 export default function PortfolioCoverEditor({ ownerId, coverId, selection, onSelectionChange, resetKey }) {
   const inputRef = useRef(null)
   const previewRef = useRef(null)
   const [previewUrl, setPreviewUrl] = useState(null)
   const [error, setError] = useState('')
+  const [confirmRemove, setConfirmRemove] = useState(false)
 
   useEffect(() => {
     if (previewRef.current) URL.revokeObjectURL(previewRef.current)
@@ -31,11 +31,11 @@ export default function PortfolioCoverEditor({ ownerId, coverId, selection, onSe
     event.target.value = ''
     if (!file) return
     setError('')
-    if (!IMAGE_TYPES.includes(file.type)) {
+    if (!isSupportedImageType(file)) {
       setError('Choose a JPEG, PNG, or WebP image.')
       return
     }
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
       setError('Cover images must be 5 MB or smaller.')
       return
     }
@@ -47,11 +47,11 @@ export default function PortfolioCoverEditor({ ownerId, coverId, selection, onSe
   }
 
   const remove = () => {
-    if (!window.confirm('Remove the portfolio cover photo? The default background will be used.')) return
     if (previewRef.current) URL.revokeObjectURL(previewRef.current)
     previewRef.current = null
     setPreviewUrl(null)
     onSelectionChange('remove')
+    setConfirmRemove(false)
   }
 
   return (
@@ -79,12 +79,13 @@ export default function PortfolioCoverEditor({ ownerId, coverId, selection, onSe
         <div className="flex shrink-0 flex-wrap gap-2">
           <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Choose portfolio cover photo" onChange={choose} className="sr-only" />
           <Button variant="secondary" onClick={() => inputRef.current?.click()}><Camera size={16} aria-hidden="true" /> {coverId || previewUrl ? 'Replace cover' : 'Upload cover'}</Button>
-          {(coverId || previewUrl) && <Button variant="ghost" onClick={remove}><Trash2 size={16} aria-hidden="true" /> Remove</Button>}
+          {(coverId || previewUrl) && <Button variant="ghost" onClick={() => setConfirmRemove(true)}><Trash2 size={16} aria-hidden="true" /> Remove</Button>}
         </div>
       </div>
       {error && <p className="px-4 pb-4 text-sm text-red-700" role="alert">{error}</p>}
       {selection && selection !== 'remove' && <p className="px-4 pb-4 text-sm text-ink-muted">Cover preview ready. Save your portfolio to keep it.</p>}
       {selection === 'remove' && <p className="px-4 pb-4 text-sm text-ink-muted">The default cover will be restored when you save.</p>}
+      <ConfirmDialog open={confirmRemove} onClose={() => setConfirmRemove(false)} onConfirm={remove} title="Remove portfolio cover?" message="The default background will be used instead. The change takes effect when you save your portfolio." confirmLabel="Remove cover" danger />
     </section>
   )
 }

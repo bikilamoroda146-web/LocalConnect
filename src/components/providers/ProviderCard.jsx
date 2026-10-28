@@ -9,7 +9,7 @@ import { categoryById } from '../../data/categories'
 import { priceLabel } from '../../utils/format'
 import { useApp } from '../../app/AppContext'
 
-export default function ProviderCard({ provider }) {
+export default function ProviderCard({ provider, showVerification = true }) {
   const { services } = useApp()
   const own = services.filter((s) => s.providerId === provider.id && s.published)
   const lowest = own.sort((a, b) => a.price - b.price)[0]
@@ -29,7 +29,7 @@ export default function ProviderCard({ provider }) {
         <div className="flex items-center gap-2"><dt className="sr-only">Category</dt><dd>{categoryById(provider.category)?.name}</dd></div>
         <div className="flex items-center gap-1.5"><MapPin size={14} aria-hidden="true" /><dt className="sr-only">Service area</dt><dd>{provider.area}</dd></div>
       </dl>
-      <div className="mt-3 flex items-center justify-between"><Rating value={provider.rating} count={provider.reviews} /><VerificationBadge verified={provider.verified} /></div>
+      <div className="mt-3 flex items-center justify-between gap-2"><Rating value={provider.rating} count={provider.reviews} />{showVerification && <VerificationBadge verified={provider.verified} />}</div>
       <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4">
         <p className="text-sm"><span className="text-ink-muted">{lowest ? '' : 'No services yet'}</span>{lowest && <span className="font-semibold">{priceLabel(lowest)}</span>}</p>
         <Button to={`/providers/${provider.id}`} variant="secondary" size="sm">View Profile</Button>
