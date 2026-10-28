@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, CalendarCheck, Heart, UserRound, Briefcase, Clock, Users, ListChecks, BarChart3, Menu, X, LogOut, Globe, Images, Image as ImageIcon } from 'lucide-react'
 import Logo from './Logo'
 import ProfileAvatar from '../common/ProfileAvatar'
 import { useApp } from '../../app/AppContext'
 import { profilePath } from '../../data/users'
+import useDialogFocus from '../../hooks/useDialogFocus'
 
 const NAV = {
   customer: [['dashboard', 'Dashboard', LayoutDashboard], ['bookings', 'My bookings', CalendarCheck], ['favorites', 'Favorites', Heart], ['profile', 'Profile', UserRound]],
@@ -13,9 +14,11 @@ const NAV = {
 }
 export default function DashboardLayout({ role }) {
   const [open, setOpen] = useState(false)
+  const drawerRef = useRef(null)
   const { user, logout } = useApp()
   const nav = useNavigate()
   const items = NAV[role]
+  useDialogFocus(drawerRef, open, () => setOpen(false))
   const side = (
     <nav aria-label={`${role} navigation`} className="flex h-full flex-col">
       <div className="px-5 py-4"><Logo /></div>
@@ -40,10 +43,10 @@ export default function DashboardLayout({ role }) {
   return (
     <div className="min-h-screen lg:flex">
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-line bg-white lg:block">{side}</aside>
-      {open && <div className="fixed inset-0 z-40 lg:hidden"><div className="absolute inset-0 bg-navy/50" onClick={() => setOpen(false)} /><aside className="relative h-full w-72 max-w-[85%] bg-white shadow-lift">{side}</aside></div>}
+      {open && <div className="fixed inset-0 z-40 lg:hidden"><button type="button" className="absolute inset-0 bg-navy/50" onClick={() => setOpen(false)} aria-label="Close navigation" /><aside ref={drawerRef} role="dialog" aria-modal="true" aria-label={`${role} navigation`} tabIndex={-1} className="relative h-full w-72 max-w-[85%] bg-white shadow-lift">{side}</aside></div>}
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-white/95 px-4 backdrop-blur sm:px-6">
-          <button className="-ml-2 rounded p-2 lg:hidden" onClick={() => setOpen(!open)} aria-label={open ? 'Close navigation' : 'Open navigation'} aria-expanded={open}>{open ? <X /> : <Menu />}</button>
+          <button type="button" className="-ml-2 rounded p-2 lg:hidden" onClick={() => setOpen(!open)} aria-label={open ? 'Close navigation' : 'Open navigation'} aria-expanded={open}>{open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}</button>
           <p className="hidden text-sm text-ink-muted lg:block">Demo data stored in this browser only</p>
           {profilePath[role]
             ? <Link to={profilePath[role]} className="flex items-center gap-2 rounded-md px-2 py-1 text-sm font-medium hover:bg-slate-50">

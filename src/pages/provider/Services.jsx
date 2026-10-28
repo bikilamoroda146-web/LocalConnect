@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Plus, Pencil, Trash2, Eye, EyeOff, Search, Briefcase, MapPin, CircleDollarSign } from 'lucide-react'
 import PageHeader from '../../components/common/PageHeader'
 import Button from '../../components/common/Button'
@@ -10,6 +10,8 @@ import { EmptyState } from '../../components/common/States'
 import { useApp } from '../../app/AppContext'
 import { categories, categoryById } from '../../data/categories'
 import { priceLabel } from '../../utils/format'
+import { ACCEPTED_IMAGE_TYPES, MAX_IMAGE_SIZE_BYTES, isSupportedImageType } from '../../utils/media'
+import { removeServiceImage, saveServiceImage } from '../../utils/serviceImages'
 
 const blank = { title: '', category: 'home-repairs', desc: '', price: '', unit: 'per visit', area: '', image: '', includesText: '' }
 
@@ -17,7 +19,16 @@ function ServiceForm({ initial, onClose, onSave }) {
   const [f, setF] = useState(initial)
   const [err, setErr] = useState({})
   const [saving, setSaving] = useState(false)
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState('')
   const submitLock = useRef(false)
+  const originalImage = useRef(initial.image)
+  useEffect(() => {
+    if (!imageFile) { setImagePreview(''); return undefined }
+    const url = URL.createObjectURL(imageFile)
+    setImagePreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [imageFile])
   const set = (k) => (e) => {
     setF((current) => ({ ...current, [k]: e.target.value }))
     setErr((current) => {
@@ -27,7 +38,22 @@ function ServiceForm({ initial, onClose, onSave }) {
       return next
     })
   }
-  const submit = (e) => {
+  const chooseImage = (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    if (!isSupportedImageType(file)) {
+      setErr((current) => ({ ...current, image: `Choose a JPEG, PNG, or WebP image (${ACCEPTED_IMAGE_TYPES.join(', ')}).` }))
+      return
+    }
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      setErr((current) => ({ ...current, image: 'Choose an image smaller than 5 MB.' }))
+      return
+    }
+    setImageFile(file)
+    setErr((current) => { const next = { ...current }; delete next.image; return next })
+  }
+  const submit = async (e) => {
     e.preventDefault()
     if (submitLock.current) return
     const errors = {}
@@ -38,7 +64,7 @@ function ServiceForm({ initial, onClose, onSave }) {
     if (!categories.some((category) => category.id === f.category)) errors.category = 'Choose a valid category.'
     if (!['per visit', 'per hour', 'per item', 'estimate', 'from'].includes(f.unit)) errors.unit = 'Choose a valid price type.'
     if (!f.area.trim()) errors.area = 'Enter the area you serve.'
-    if (f.image.trim()) {
+    if (!imageFile && f.image?.trim() && !f.image.startsWith('indexeddb:')) {
       try {
         const url = new URL(f.image.trim())
         if (!['http:', 'https:'].includes(url.protocol)) errors.image = 'Use an image link starting with http:// or https://.'
@@ -52,7 +78,9 @@ function ServiceForm({ initial, onClose, onSave }) {
     setSaving(true)
     const { includesText, ...rest } = f
     try {
-      onSave({ ...rest, title: f.title.trim(), desc: f.desc.trim(), image: f.image.trim(), price, includes: includesText.split('\n').map((x) => x.trim()).filter(Boolean) })
+      const nextImage = imageFile ? await saveServiceImage(imageFile) : f.image?.trim() ?? ''
+      onSave({ ...rest, title: f.title.trim(), desc: f.desc.trim(), image: nextImage, price, includes: includesText.split('\n').map((x) => x.trim()).filter(Boolean) })
+      if (originalImage.current?.startsWith('indexeddb:') && originalImage.current !== nextImage) removeServiceImage(originalImage.current).catch(() => {})
       onClose()
     } catch (error) {
       setErr((current) => ({ ...current, form: `Service could not be saved: ${error.message}` }))
@@ -75,10 +103,19 @@ function ServiceForm({ initial, onClose, onSave }) {
         </div>
         <Field label="Service area" value={f.area} onChange={set('area')} error={err.area} maxLength={100} required disabled={saving} hint="Enter the city or area where you provide this service." />
         <Field label="What’s included (optional)" as="textarea" rows={3} value={f.includesText} onChange={set('includesText')} maxLength={1000} disabled={saving} hint="List one item per line." />
-        <Field label="Image URL (optional)" type="url" value={f.image} onChange={set('image')} error={err.image} disabled={saving} hint="Paste a direct http(s) image link. It is displayed as a preview; no image is uploaded." />
+        <div>
+          <label htmlFor="service-image" className="mb-1.5 block text-sm font-medium text-ink">Service image (optional)</label>
+          <p id="service-image-hint" className="mb-2 text-sm text-ink-muted">JPEG, PNG, or WebP. Maximum 5 MB. The image stays in this browser and is not uploaded to a server.</p>
+          <input id="service-image" type="file" accept={ACCEPTED_IMAGE_TYPES.join(',')} onChange={chooseImage} disabled={saving} aria-describedby={err.image ? 'service-image-hint service-image-error' : 'service-image-hint'} className="block w-full rounded-control border border-line bg-white p-2 text-sm file:mr-3 file:min-h-10 file:rounded-control file:border-0 file:bg-brand-50 file:px-3 file:font-semibold file:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand" />
+          {err.image && <p id="service-image-error" role="alert" className="mt-1 text-sm text-error-700">{err.image}</p>}
+          {(imageFile || f.image) && <div className="mt-3 flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant="secondary" onClick={() => document.getElementById('service-image')?.click()} disabled={saving}>Replace image</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => { setImageFile(null); setF((current) => ({ ...current, image: '' })); setErr((current) => { const next = { ...current }; delete next.image; return next }) }} disabled={saving}>Remove image</Button>
+          </div>}
+        </div>
         <div>
           <p className="mb-2 text-sm font-medium text-ink">Image preview</p>
-          <ServiceArt category={f.category} src={!err.image && f.image ? f.image : undefined} className="h-36 rounded-md sm:h-44" alt={f.title ? `${f.title} image preview` : 'Service image preview'} />
+          <ServiceArt category={f.category} src={imagePreview || (!err.image ? f.image : undefined)} className="h-36 rounded-md sm:h-44" alt={f.title ? `${f.title} image preview` : 'Service image preview'} />
         </div>
         {err.form && <p role="alert" className="text-sm text-red-700">{err.form}</p>}
       </form>

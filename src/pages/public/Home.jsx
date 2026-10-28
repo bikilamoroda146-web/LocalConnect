@@ -75,10 +75,10 @@ export default function Home() {
 
   return (
     <>
-      <section className="relative isolate overflow-hidden bg-navy">
+      <section className="home-hero-lighting relative isolate overflow-hidden bg-navy">
         <HomepageHeroBackground imageUrl={imageUrl} position={appearance.position} />
-        <div className="container-page relative z-10 grid items-center gap-10 py-14 sm:py-20 lg:min-h-[560px] lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 lg:py-20">
-          <div className="max-w-2xl">
+        <div className="container-page relative z-10 flex items-center py-14 sm:py-20 lg:min-h-[560px] lg:py-20">
+          <div className="max-w-3xl">
             <p className="inline-flex items-center gap-2 rounded-pill border border-white/20 bg-white/10 px-3 py-1.5 text-sm font-semibold text-white">
               <Sparkles size={15} aria-hidden="true" /> Local services, made easier to explore
             </p>
@@ -98,7 +98,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="relative mx-auto w-full max-w-lg lg:ml-auto">
+          <div className="hidden">
             <div className="overflow-hidden rounded-panel border border-white/20 bg-white/10 p-2 shadow-2xl backdrop-blur-sm">
               {heroService ? (
                 <ServiceArt

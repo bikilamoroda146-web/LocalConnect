@@ -7,6 +7,7 @@ import { providers as seedProviders } from '../data/providers'
 import { load, save, clearAll } from '../utils/storage'
 import { canTransition } from '../utils/bookings'
 import { TODAY } from '../utils/format'
+import { removeServiceImage } from '../utils/serviceImages'
 
 const Ctx = createContext(null)
 export const useApp = () => useContext(Ctx)
@@ -123,11 +124,13 @@ export function AppProvider({ children }) {
     toast(s.published ? 'Unpublished' : 'Published')
   }
   const deleteService = (id) => {
-    if (!services.some((service) => service.id === id)) {
+    const service = services.find((item) => item.id === id)
+    if (!service) {
       toast('That service could not be found.', 'error')
       return
     }
     setServices((s) => s.filter((x) => x.id !== id))
+    removeServiceImage(service.image).catch(() => {})
     toast('Service deleted')
   }
 
