@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { Camera, Image as ImageIcon, RotateCcw, Trash2, UploadCloud } from 'lucide-react'
+import { Camera, Image as ImageIcon, RotateCcw, Trash2, UploadCloud, Video as VideoIcon } from 'lucide-react'
 import Button from '../../components/common/Button'
 import PageHeader from '../../components/common/PageHeader'
 import HomepageHeroBackground from '../../components/public/HomepageHeroBackground'
 import useHomepageAppearance from '../../hooks/useHomepageAppearance'
 import { saveHomepageAppearance } from '../../utils/homepageAppearance'
-import { isSupportedImageType, MAX_IMAGE_SIZE_BYTES } from '../../utils/media'
+import { ACCEPTED_VIDEO_TYPES, isSupportedImageType, isSupportedVideoType, MAX_IMAGE_SIZE_BYTES, MAX_VIDEO_SIZE_BYTES } from '../../utils/media'
 
 function readableStorageError(error) {
   if (error?.name === 'QuotaExceededError') {
@@ -15,7 +15,7 @@ function readableStorageError(error) {
 }
 
 export default function AdminAppearance() {
-  const { appearance, imageUrl, loading, error: loadError, refresh } = useHomepageAppearance()
+  const { appearance, imageUrl, videoUrl, loading, error: loadError, refresh } = useHomepageAppearance()
   const [file, setFile] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
   const [position, setPosition] = useState('center')
@@ -25,9 +25,17 @@ export default function AdminAppearance() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [videoFile, setVideoFile] = useState(null)
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState(null)
+  const [videoSaving, setVideoSaving] = useState(false)
+  const [videoError, setVideoError] = useState('')
+  const [videoSuccess, setVideoSuccess] = useState('')
   const inputRef = useRef(null)
+  const videoInputRef = useRef(null)
   const previewUrlRef = useRef(null)
+  const videoPreviewUrlRef = useRef(null)
   const submitLock = useRef(false)
+  const videoSubmitLock = useRef(false)
 
   useEffect(() => {
     if (!loading) setPosition(appearance.position)
@@ -35,6 +43,7 @@ export default function AdminAppearance() {
 
   useEffect(() => () => {
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+    if (videoPreviewUrlRef.current) URL.revokeObjectURL(videoPreviewUrlRef.current)
   }, [])
 
   const clearPreview = () => {
@@ -87,6 +96,71 @@ export default function AdminAppearance() {
     setSuccess('')
   }
 
+  const clearVideoPreview = () => {
+    if (videoPreviewUrlRef.current) URL.revokeObjectURL(videoPreviewUrlRef.current)
+    videoPreviewUrlRef.current = null
+    setVideoPreviewUrl(null)
+  }
+
+  const chooseVideo = (selected) => {
+    if (!selected) return
+    setVideoError('')
+    setVideoSuccess('')
+    if (!isSupportedVideoType(selected)) {
+      setVideoError('Choose an MP4 or WebM video file.')
+      return
+    }
+    if (selected.size > MAX_VIDEO_SIZE_BYTES) {
+      setVideoError('This video is larger than 50 MB. Choose a smaller, compressed video.')
+      return
+    }
+    clearVideoPreview()
+    const url = URL.createObjectURL(selected)
+    videoPreviewUrlRef.current = url
+    setVideoPreviewUrl(url)
+    setVideoFile(selected)
+  }
+
+  const saveVideo = async () => {
+    if (videoSubmitLock.current || !videoFile) return
+    videoSubmitLock.current = true
+    setVideoSaving(true)
+    setVideoError('')
+    setVideoSuccess('')
+    try {
+      await saveHomepageAppearance({ video: videoFile })
+      clearVideoPreview()
+      setVideoFile(null)
+      await refresh()
+      setVideoSuccess('Background video saved in this browser.')
+    } catch (saveError) {
+      setVideoError(readableStorageError(saveError))
+    } finally {
+      videoSubmitLock.current = false
+      setVideoSaving(false)
+    }
+  }
+
+  const removeVideo = async () => {
+    if (videoSubmitLock.current) return
+    videoSubmitLock.current = true
+    setVideoSaving(true)
+    setVideoError('')
+    setVideoSuccess('')
+    try {
+      await saveHomepageAppearance({ video: null })
+      clearVideoPreview()
+      setVideoFile(null)
+      await refresh()
+      setVideoSuccess('Background video removed. The fallback background is now in use.')
+    } catch (saveError) {
+      setVideoError(readableStorageError(saveError))
+    } finally {
+      videoSubmitLock.current = false
+      setVideoSaving(false)
+    }
+  }
+
   const publishChanges = async () => {
     if (submitLock.current) return
     setError('')
@@ -136,7 +210,7 @@ export default function AdminAppearance() {
     <>
       <PageHeader
         title="Homepage appearance"
-        text="Choose the background image and position shown behind the homepage hero."
+        text="Choose the background image, position, and video shown behind the homepage hero."
       />
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.8fr)]">
         <section className="card overflow-hidden" aria-labelledby="background-heading">
@@ -231,6 +305,56 @@ export default function AdminAppearance() {
           </section>
         </aside>
       </div>
+
+      <section className="card mt-6 p-5 sm:p-6" aria-labelledby="video-heading">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 id="video-heading" className="font-semibold">Homepage background video</h2>
+            <p className="mt-1 max-w-2xl text-sm text-ink-muted">Choose a short MP4 or WebM clip. Video files are limited to 50 MB and saved only in this browser.</p>
+          </div>
+          <VideoIcon size={21} className="text-brand" aria-hidden="true" />
+        </div>
+        <div className="mt-4 overflow-hidden rounded-lg bg-navy">
+          {videoPreviewUrl || videoUrl ? (
+            <video
+              key={videoPreviewUrl || videoUrl}
+              className="aspect-video max-h-[28rem] w-full object-cover"
+              src={videoPreviewUrl || videoUrl}
+              controls
+              muted
+              playsInline
+              preload="metadata"
+              onLoadedData={() => setVideoError('')}
+              onError={() => setVideoError('This video could not be previewed. Choose a valid MP4 or WebM file.')}
+            />
+          ) : (
+            <div className="grid aspect-video place-items-center bg-gradient-to-br from-slate-950 via-blue-950 to-brand-900 p-6 text-center text-white">
+              <div><VideoIcon size={36} className="mx-auto text-blue-200" aria-hidden="true" /><p className="mt-3 font-medium">No background video selected</p><p className="mt-1 text-sm text-white/70">The homepage will use its fallback background.</p></div>
+            </div>
+          )}
+        </div>
+        <input
+          ref={videoInputRef}
+          type="file"
+          accept={ACCEPTED_VIDEO_TYPES.join(',')}
+          aria-label="Choose homepage background video"
+          className="sr-only"
+          onChange={(event) => { chooseVideo(event.target.files?.[0]); event.target.value = '' }}
+        />
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Button variant="secondary" onClick={() => videoInputRef.current?.click()} disabled={videoSaving}>
+            <UploadCloud size={16} aria-hidden="true" /> {videoUrl || videoFile ? 'Replace Video' : 'Upload Background Video'}
+          </Button>
+          {videoFile && <Button onClick={saveVideo} loading={videoSaving} disabled={videoSaving}>Save and Publish</Button>}
+          {(videoUrl || videoFile) && <Button variant="ghost" onClick={removeVideo} loading={videoSaving} disabled={videoSaving}>
+            <Trash2 size={16} aria-hidden="true" /> Remove Video
+          </Button>}
+        </div>
+        {videoFile && <p className="mt-2 text-sm text-ink-muted">Selected: {videoFile.name} ({(videoFile.size / (1024 * 1024)).toFixed(1)} MB). Save and publish to persist it.</p>}
+        {videoError && <p className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-800" role="alert">{videoError}</p>}
+        {videoSuccess && <p className="mt-3 rounded-md bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{videoSuccess}</p>}
+        <p className="mt-4 rounded-md border border-brand-100 bg-brand-50 p-3 text-sm text-ink-soft">This demo stores the selected video in this browser only. It is not shared with other visitors or devices. The admin check is simulated in the frontend; production access control and shared publishing need a backend with authorized media storage.</p>
+      </section>
 
       {(loadError || error) && <p className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-800" role="alert">{error || loadError}</p>}
       {success && <p className="mt-4 rounded-md bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{success}</p>}

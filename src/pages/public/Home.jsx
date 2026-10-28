@@ -21,6 +21,7 @@ import { categories } from '../../data/categories'
 import { useApp } from '../../app/AppContext'
 import useHomepageAppearance from '../../hooks/useHomepageAppearance'
 import HomepageHeroBackground from '../../components/public/HomepageHeroBackground'
+import HomepageHeroVideo from '../../components/public/HomepageHeroVideo'
 
 const steps = [
   {
@@ -60,7 +61,7 @@ const benefits = [
 
 export default function Home() {
   const { providers, services, reviews, providerOf } = useApp()
-  const { imageUrl, appearance } = useHomepageAppearance()
+  const { imageUrl, videoUrl, appearance } = useHomepageAppearance()
   const publishedServices = services.filter((service) => service.published)
   const featuredServices = [...publishedServices]
     .sort((a, b) => (providerOf(b.providerId)?.rating ?? 0) - (providerOf(a.providerId)?.rating ?? 0))
@@ -77,6 +78,7 @@ export default function Home() {
     <>
       <section className="home-hero-lighting relative isolate overflow-hidden bg-navy">
         <HomepageHeroBackground imageUrl={imageUrl} position={appearance.position} />
+        <HomepageHeroVideo videoUrl={videoUrl} />
         <div className="container-page relative z-10 flex items-center py-14 sm:py-20 lg:min-h-[560px] lg:py-20">
           <div className="max-w-3xl">
             <p className="inline-flex items-center gap-2 rounded-pill border border-white/20 bg-white/10 px-3 py-1.5 text-sm font-semibold text-white">
@@ -128,7 +130,6 @@ export default function Home() {
                 <p className="mt-3 line-clamp-2 text-sm text-ink-soft">{heroService.desc}</p>
               </article>
             )}
-            <p className="mt-3 text-center text-xs text-white/70">Illustrative service artwork and sample listings</p>
           </div>
         </div>
       </section>
